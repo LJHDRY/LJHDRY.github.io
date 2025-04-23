@@ -1,0 +1,106 @@
+<!-- معرض الصور المتعددة -->
+<div id="imageGalleryModal" class="image-gallery-modal">
+    <div class="image-gallery-content">
+        <div class="image-gallery-close" onclick="closeImageGallery()">&times;</div>
+        <div class="image-gallery-nav image-gallery-prev" onclick="changeImage(-1)">&#10094;</div>
+        <div class="image-gallery-main">
+            <img id="galleryMainImage" src="" alt="صورة الحساب">
+        </div>
+        <div class="image-gallery-nav image-gallery-next" onclick="changeImage(1)">&#10095;</div>
+        <div id="galleryThumbnails" class="image-gallery-thumbnails"></div>
+    </div>
+</div>
+
+<script>
+    // متغيرات معرض الصور
+    let currentGalleryImages = [];
+    let currentImageIndex = 0;
+    
+    // فتح معرض الصور
+    function openImageGallery(images, startIndex = 0) {
+        if (!images || images.length === 0) return;
+        
+        currentGalleryImages = images;
+        currentImageIndex = startIndex;
+        
+        // عرض الصورة الرئيسية
+        const galleryMainImage = document.getElementById('galleryMainImage');
+        galleryMainImage.src = currentGalleryImages[currentImageIndex];
+        
+        // إنشاء الصور المصغرة
+        const galleryThumbnails = document.getElementById('galleryThumbnails');
+        galleryThumbnails.innerHTML = '';
+        
+        currentGalleryImages.forEach((image, index) => {
+            const thumbnail = document.createElement('div');
+            thumbnail.className = `image-gallery-thumbnail ${index === currentImageIndex ? 'active' : ''}`;
+            thumbnail.innerHTML = `<img src="${image}" alt="صورة مصغرة">`;
+            thumbnail.onclick = () => selectImage(index);
+            galleryThumbnails.appendChild(thumbnail);
+        });
+        
+        // عرض المعرض
+        const imageGalleryModal = document.getElementById('imageGalleryModal');
+        imageGalleryModal.style.display = 'block';
+        
+        // منع التمرير في الصفحة الخلفية
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // إغلاق معرض الصور
+    function closeImageGallery() {
+        const imageGalleryModal = document.getElementById('imageGalleryModal');
+        imageGalleryModal.style.display = 'none';
+        
+        // إعادة تمكين التمرير في الصفحة
+        document.body.style.overflow = 'auto';
+    }
+    
+    // تغيير الصورة الحالية
+    function changeImage(step) {
+        if (currentGalleryImages.length <= 1) return;
+        
+        currentImageIndex = (currentImageIndex + step + currentGalleryImages.length) % currentGalleryImages.length;
+        selectImage(currentImageIndex);
+    }
+    
+    // اختيار صورة محددة
+    function selectImage(index) {
+        currentImageIndex = index;
+        
+        // تحديث الصورة الرئيسية
+        const galleryMainImage = document.getElementById('galleryMainImage');
+        galleryMainImage.src = currentGalleryImages[currentImageIndex];
+        
+        // تحديث الصور المصغرة
+        const thumbnails = document.querySelectorAll('.image-gallery-thumbnail');
+        thumbnails.forEach((thumbnail, idx) => {
+            if (idx === currentImageIndex) {
+                thumbnail.classList.add('active');
+            } else {
+                thumbnail.classList.remove('active');
+            }
+        });
+    }
+    
+    // إغلاق المعرض عند النقر خارج الصورة
+    document.addEventListener('click', function(event) {
+        const imageGalleryModal = document.getElementById('imageGalleryModal');
+        const imageGalleryContent = document.querySelector('.image-gallery-content');
+        
+        if (event.target === imageGalleryModal) {
+            closeImageGallery();
+        }
+    });
+    
+    // إغلاق المعرض عند الضغط على زر Escape
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeImageGallery();
+        } else if (event.key === 'ArrowLeft') {
+            changeImage(-1);
+        } else if (event.key === 'ArrowRight') {
+            changeImage(1);
+        }
+    });
+</script>
