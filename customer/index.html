@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر الجحدري - حسابات فري فاير</title>
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Adapter (replaces shared_data.js) -->
+    <script src="../firebase_adapter.js"></script>
+    <!-- Gallery CSS -->
+    <link rel="stylesheet" href="../shared/gallery.css">
+    
+    <style>
+        :root {
+            --primary-color: #4a148c;
+            --secondary-color: #7b1fa2;
+            --accent-color: #e91e63;
+            --light-color: #f3e5f5;
+            --dark-color: #3e2723;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            direction: rtl;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .hero-section {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://wallpapercave.com/wp/wp6393261.jpg');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .hero-section h2 {
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+        
+        .hero-section p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        
+        .divider {
+            height: 3px;
+            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+            margin: 30px 0;
+            border-radius: 3px;
+        }
+        
+        .storage-mode-indicator {
+            background-color: var(--light-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: var(--primary-color);
+            display: inline-block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .category-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .category-filter h3 {
+            width: 100%;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 1.3rem;
+            border-bottom: 2px solid var(--light-color);
+            padding-bottom: 10px;
+        }
+        
+        .category-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+        
+        .category-btn.all {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .category-btn.premium {
+            background-color: #ffd700;
+            color: #333;
+        }
+        
+        .category-btn.good {
+            background-color: #4caf50;
+            color: white;
+        }
+        
+        .category-btn.economic {
+            background-color: #2196f3;
+            color: white;
+        }
+        
+        .category-btn.special {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .category-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .category-btn.active {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .accounts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .account-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .account-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .account-image {
+            height: 200px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .account-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+        
+        .account-card:hover .account-image img {
+            transform: scale(1.1);
+        }
+        
+        .no-image {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--light-color);
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .account-category {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+        
+        .account-category.premium {
+            background-color: #ffd700;
+            color: #333;
+        }
+        
+        .account-category.good {
+            background-color: #4caf50;
+            color: white;
+        }
+        
+        .account-category.economic {
+            background-color: #2196f3;
+            color: white;
+        }
+        
+        .account-category.special {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .account-details {
+            padding: 20px;
+        }
+        
+        .account-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        .account-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+        
+        .account-description {
+            color: #555;
+            margin-bottom: 20px;
+            max-height: 80px;
+            overflow: hidden;
+            line-height: 1.5;
+        }
+        
+        .order-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            text-decoration: none;
+            font-size: 1.1rem;
+        }
+        
+        .order-btn:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+        
+        .loading-spinner {
+            border: 5px solid var(--light-color);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-accounts {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+            color: #555;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .footer {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 40px 0 20px;
+            margin-top: 50px;
+            text-align: center;
+        }
+        
+        .footer h3 {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 500px;
+            margin: 0 auto 30px;
+        }
+        
+        .contact-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .contact-icon {
+            font-size: 1.5rem;
+        }
+        
+        .copyright {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 768px) {
+            .accounts-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .hero-section {
+                padding: 40px 15px;
+            }
+            
+            .hero-section h2 {
+                font-size: 1.8rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .accounts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .category-filter {
+                flex-direction: column;
+            }
+            
+            .category-btn {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>متجر الجحدري</h1>
+        <p>أفضل حسابات فري فاير بأسعار مناسبة</p>
+        <div class="storage-mode-indicator">وضع التخزين المحلي</div>
+    </div>
+
+    <div class="container">
+        <div class="hero-section">
+            <h2>أقوى حسابات فري فاير</h2>
+            <p>نوفر لكم أفضل الحسابات بمستويات عالية وسكنات نادرة وشخصيات مميزة بأسعار تنافسية. جميع الحسابات أصلية وموثوقة 100%.</p>
+            <button class="order-btn" onclick="scrollToAccounts()">تصفح الحسابات الآن</button>
+        </div>
+
+        <div class="category-filter" id="categoryFilter">
+            <h3>تصفية الحسابات حسب الفئة</h3>
+            <button class="category-btn all active" data-category="all">جميع الفئات</button>
+            <button class="category-btn premium" data-category="premium">ممتاز</button>
+            <button class="category-btn good" data-category="good">جيد</button>
+            <button class="category-btn economic" data-category="economic">اقتصادي</button>
+            <button class="category-btn special" data-category="special">خاص</button>
+        </div>
+
+        <div id="accountsLoading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>جاري تحميل الحسابات...</p>
+        </div>
+        <div id="accountsContainer" class="accounts-grid"></div>
+    </div>
+
+    <div class="footer">
+        <h3>تواصل معنا</h3>
+        <div class="contact-info">
+            <div class="contact-item">
+                <span class="contact-icon">📱</span>
+                <span>واتساب: +967 771 339 339</span>
+            </div>
+            <div class="contact-item">
+                <span class="contact-icon">🌐</span>
+                <span>انستغرام: @LJHD_RY</span>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>جميع الحقوق محفوظة &copy; متجر الجحدري لحسابات فري فاير 2025</p>
+        </div>
+    </div>
+    
+    <!-- معرض الصور المتعددة -->
+    <div id="imageGalleryModal" class="image-gallery-modal">
+        <div class="image-gallery-content">
+            <div class="image-gallery-close" onclick="closeImageGallery()">&times;</div>
+            <div class="image-gallery-nav image-gallery-prev" onclick="changeImage(-1)">&#10094;</div>
+            <div class="image-gallery-main">
+                <img id="galleryMainImage" src="" alt="صورة الحساب">
+            </div>
+            <div class="image-gallery-nav image-gallery-next" onclick="changeImage(1)">&#10095;</div>
+            <div id="galleryThumbnails" class="image-gallery-thumbnails"></div>
+        </div>
+    </div>
+
+    <script>
+        // تسجيل زيارة عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            // تسجيل الزيارة
+            recordVisit();
+            
+            // تحميل الحسابات
+            loadAccounts();
+        });
+        
+        // متغيرات معرض الصور
+        let currentGalleryImages = [];
+        let currentImageIndex = 0;
+        
+        // تسجيل زيارة جديدة
+        async function recordVisit() {
+            try {
+                // الحصول على تاريخ اليوم بتنسيق YYYY-MM-DD
+                const today = new Date();
+                const dateString = today.toISOString().split('T')[0];
+                
+                // الحصول على مرجع لوثيقة إحصائيات اليوم
+                const db = firebase.firestore();
+                const statsRef = db.collection('visitor_stats').doc(dateString);
+                
+                // التحقق مما إذا كانت الوثيقة موجودة بالفعل
+                const doc = await statsRef.get();
+                
+                if (doc.exists) {
+                    // تحديث عدد الزيارات
+                    await statsRef.update({
+                        visits: firebase.firestore.FieldValue.increment(1),
+                        lastUpdated: new Date()
+                    });
+                } else {
+                    // إنشاء وثيقة جديدة
+                    await statsRef.set({
+                        date: dateString,
+                        visits: 1,
+                        created: new Date(),
+                        lastUpdated: new Date()
+                    });
+                }
+                
+                console.log('تم تسجيل الزيارة بنجاح');
+            } catch (error) {
+                console.error('خطأ في تسجيل الزيارة:', error);
+                // استخدام localStorage كخطة بديلة
+                try {
+                    const today = new Date().toISOString().split('T')[0];
+                    const stats = JSON.parse(localStorage.getItem('visitor_stats') || '{}');
+                    
+                    if (!stats[today]) {
+                        stats[today] = 0;
+                    }
+                    
+                    stats[today]++;
+                    localStorage.setItem('visitor_stats', JSON.stringify(stats));
+                } catch (e) {
+                    console.error('خطأ في تسجيل الزيارة محلياً:', e);
+                }
+            }
+        }
+        
+        // فتح معرض الصور
+        function openImageGallery(images, startIndex = 0) {
+            if (!images || images.length === 0) return;
+            
+            currentGalleryImages = images;
+            currentImageIndex = startIndex;
+            
+            // عرض الصورة الرئيسية
+            const galleryMainImage = document.getElementById('galleryMainImage');
+            galleryMainImage.src = currentGalleryImages[currentImageIndex];
+            
+            // إنشاء الصور المصغرة
+            const galleryThumbnails = document.getElementById('galleryThumbnails');
+            galleryThumbnails.innerHTML = '';
+            
+            currentGalleryImages.forEach((image, index) => {
+                const thumbnail = document.createElement('div');
+                thumbnail.className = `image-gallery-thumbnail ${index === currentImageIndex ? 'active' : ''}`;
+                thumbnail.innerHTML = `<img src="${image}" alt="صورة مصغرة">`;
+                thumbnail.onclick = () => selectImage(index);
+                galleryThumbnails.appendChild(thumbnail);
+            });
+            
+            // عرض المعرض
+            const imageGalleryModal = document.getElementById('imageGalleryModal');
+            imageGalleryModal.style.display = 'block';
+            
+            // منع التمرير في الصفحة الخلفية
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // إغلاق معرض الصور
+        function closeImageGallery() {
+            const imageGalleryModal = document.getElementById('imageGalleryModal');
+            imageGalleryModal.style.display = 'none';
+            
+            // إعادة تمكين التمرير في الصفحة
+            document.body.style.overflow = 'auto';
+        }
+        
+        // تغيير الصورة الحالية
+        function changeImage(step) {
+            if (currentGalleryImages.length <= 1) return;
+            
+            currentImageIndex = (currentImageIndex + step + currentGalleryImages.length) % currentGalleryImages.length;
+            selectImage(currentImageIndex);
+        }
+        
+        // اختيار صورة محددة
+        function selectImage(index) {
+            currentImageIndex = index;
+            
+            // تحديث الصورة الرئيسية
+            const galleryMainImage = document.getElementById('galleryMainImage');
+            galleryMainImage.src = currentGalleryImages[currentImageIndex];
+            
+            // تحديث الصور المصغرة
+            const thumbnails = document.querySelectorAll('.image-gallery-thumbnail');
+            thumbnails.forEach((thumbnail, idx) => {
+                if (idx === currentImageIndex) {
+                    thumbnail.classList.add('active');
+                } else {
+                    thumbnail.classList.remove('active');
+                }
+            });
+        }
+        
+        // إغلاق المعرض عند النقر خارج الصورة
+        document.addEventListener('click', function(event) {
+            const imageGalleryModal = document.getElementById('imageGalleryModal');
+            
+            if (event.target === imageGalleryModal) {
+                closeImageGallery();
+            }
+        });
+        
+        // إغلاق المعرض عند الضغط على زر Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeImageGallery();
+            } else if (event.key === 'ArrowLeft') {
+                changeImage(-1);
+            } else if (event.key === 'ArrowRight') {
+                changeImage(1);
+            }
+        });
+        
+        // التمرير إلى قسم الحسابات
+        function scrollToAccounts() {
+            document.getElementById('categoryFilter').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // تنسيق رسالة واتساب
+        function formatWhatsAppMessage(account) {
+            let message = `أريد شراء الحساب رقم: #${account.accountNumber || '000'}\n`;
+            message += `عنوان الحساب: ${account.title}\n`;
+            message += `السعر: ${account.price} ${account.currency || 'ريال'}\n`;
+            message += `الفئة: ${getCategoryName(account.category || 'good')}\n`;
+            message += `الوصف: ${account.description}\n`;
+            return encodeURIComponent(message);
+        }
+        
+        // الحصول على اسم الفئة
+        function getCategoryName(categoryId) {
+            const categories = {
+                'premium': 'ممتاز',
+                'good': 'جيد',
+                'economic': 'اقتصادي',
+                'special': 'خاص'
+            };
+            
+            return categories[categoryId] || 'غير محدد';
+        }
+        
+        // تحميل الحسابات
+        async function loadAccounts(categoryId = 'all') {
+            const accountsContainer = document.getElementById('accountsContainer');
+            const accountsLoading = document.getElementById('accountsLoading');
+            
+            try {
+                accountsLoading.style.display = 'block';
+                accountsContainer.innerHTML = '';
+                
+                // الحصول على الحسابات من Firebase
+                let accounts = await getAllAccounts();
+                
+                // تصفية الحسابات حسب الفئة إذا لم تكن "الكل"
+                if (categoryId !== 'all') {
+                    accounts = accounts.filter(account => account.category === categoryId);
+                }
+                
+                // ترتيب الحسابات حسب تاريخ الإنشاء (الأحدث أولاً)
+                accounts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                
+                accountsLoading.style.display = 'none';
+                
+                if (accounts.length === 0) {
+                    accountsContainer.innerHTML = '<div class="no-accounts">لا توجد حسابات متاحة في هذه الفئة</div>';
+                    return;
+                }
+                
+                // عرض الحسابات
+                accounts.forEach(account => {
+                    const accountCard = document.createElement('div');
+                    accountCard.className = 'account-card';
+                    
+                    // صورة الحساب
+                    const accountImage = document.createElement('div');
+                    accountImage.className = 'account-image';
+                    
+                    if (account.images && account.images.length > 0) {
+                        const img = document.createElement('img');
+                        img.src = account.images[0]; // استخدام الصورة الأولى كصورة رئيسية
+                        img.alt = account.title;
+                        accountImage.appendChild(img);
+                        
+                        // إضافة شارة عدد الصور إذا كان هناك أكثر من صورة
+                        if (account.images.length > 1) {
+                            const multipleImagesBadge = document.createElement('div');
+                            multipleImagesBadge.className = 'multiple-images-badge';
+                            multipleImagesBadge.textContent = `${account.images.length} صور`;
+                            accountImage.appendChild(multipleImagesBadge);
+                        }
+                        
+                        // إضافة حدث النقر لفتح معرض الصور
+                        accountImage.addEventListener('click', function() {
+                            openImageGallery(account.images);
+                        });
+                    } else {
+                        const noImage = document.createElement('div');
+                        noImage.className = 'no-image';
+                        noImage.textContent = 'لا توجد صورة';
+                        accountImage.appendChild(noImage);
+                    }
+                    
+                    // شارة فئة الحساب
+                    const categoryBadge = document.createElement('div');
+                    categoryBadge.className = `account-category ${account.category || 'good'}`;
+                    categoryBadge.textContent = getCategoryName(account.category || 'good');
+                    accountImage.appendChild(categoryBadge);
+                    
+                    // تفاصيل الحساب
+                    const accountDetails = document.createElement('div');
+                    accountDetails.className = 'account-details';
+                    
+                    const accountNumber = document.createElement('div');
+                    accountNumber.className = 'account-number';
+                    accountNumber.textContent = `رقم الحساب: #${account.accountNumber || '000'}`;
+                    
+                    const accountTitle = document.createElement('div');
+                    accountTitle.className = 'account-title';
+                    accountTitle.textContent = account.title;
+                    
+                    const accountPrice = document.createElement('div');
+                    accountPrice.className = 'account-price';
+                    accountPrice.textContent = `${account.price} ${account.currency || 'ريال'}`;
+                    
+                    const accountDescription = document.createElement('div');
+                    accountDescription.className = 'account-description';
+                    accountDescription.textContent = account.description;
+                    
+                    // زر الطلب عبر واتساب
+                    const orderBtn = document.createElement('a');
+                    orderBtn.className = 'order-btn';
+                    orderBtn.textContent = 'طلب عبر واتساب';
+                    orderBtn.href = `https://wa.me/967771339339?text=${formatWhatsAppMessage(account)}`;
+                    orderBtn.target = '_blank';
+                    
+                    accountDetails.appendChild(accountNumber);
+                    accountDetails.appendChild(accountTitle);
+                    accountDetails.appendChild(accountPrice);
+                    accountDetails.appendChild(accountDescription);
+                    accountDetails.appendChild(orderBtn);
+                    
+                    accountCard.appendChild(accountImage);
+                    accountCard.appendChild(accountDetails);
+                    
+                    accountsContainer.appendChild(accountCard);
+                });
+            } catch (error) {
+                console.error('خطأ في تحميل الحسابات:', error);
+                accountsLoading.style.display = 'none';
+                accountsContainer.innerHTML = '<div class="no-accounts">حدث خطأ أثناء تحميل الحسابات. الرجاء المحاولة مرة أخرى.</div>';
+            }
+        }
+        
+        // وظيفة تصفية الفئات
+        const categoryButtons = document.querySelectorAll('.category-btn');
+        categoryButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // إزالة الفئة النشطة من جميع الأزرار
+                categoryButtons.forEach(btn => btn.classList.remove('active'));
+                
+                // إضافة الفئة النشطة إلى الزر المنقور
+                this.classList.add('active');
+                
+                // الحصول على معرف الفئة
+                const categoryId = this.getAttribute('data-category');
+                
+                // تحميل الحسابات حسب الفئة
+                loadAccounts(categoryId);
+            });
+        });
+        
+        // تم إزالة استدعاء loadAccounts المكرر هنا
+    </script>
+</body>
+</html>
