@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة إدارة متجر الجحدري - حسابات فري فاير</title>
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Adapter (replaces shared_data.js) -->
+    <script src="../firebase_adapter.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a148c;
+            --secondary-color: #7b1fa2;
+            --accent-color: #e91e63;
+            --light-color: #f3e5f5;
+            --dark-color: #3e2723;
+            --success-color: #4caf50;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            direction: rtl;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .admin-panel {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        @media (min-width: 992px) {
+            .admin-panel {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            border-bottom: 2px solid var(--light-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .card-header h2 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--dark-color);
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(74, 20, 140, 0.2);
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            text-align: center;
+            text-decoration: none;
+        }
+        
+        .btn:hover {
+            background-color: var(--secondary-color);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+        }
+        
+        .btn-success:hover {
+            background-color: #388e3c;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .btn-warning:hover {
+            background-color: #f57c00;
+        }
+        
+        .images-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .image-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .add-image-btn {
+            width: 100px;
+            height: 100px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 24px;
+            color: #aaa;
+            transition: all 0.3s;
+        }
+        
+        .add-image-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+            height: 20px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .accounts-list {
+            margin-top: 20px;
+        }
+        
+        .account-item {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            border-right: 4px solid var(--primary-color);
+        }
+        
+        /* إضافة أنماط إحصائيات الزوار */
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            flex: 1;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stats-chart {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stats-chart h3 {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            color: #333;
+            text-align: center;
+        }
+        
+        .chart-container {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            padding: 10px 0;
+        }
+        
+        .chart-bar {
+            flex: 1;
+            background-color: var(--primary-color);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            min-height: 20px;
+            transition: height 0.5s ease;
+        }
+        
+        .chart-bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .chart-bar-value {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .chart-loading {
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .account-item.premium {
+            border-right-color: #ffd700;
+        }
+        
+        .account-item.good {
+            border-right-color: #4caf50;
+        }
+        
+        .account-item.economic {
+            border-right-color: #2196f3;
+        }
+        
+        .account-item.special {
+            border-right-color: var(--accent-color);
+        }
+        
+        .account-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .account-title {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+        
+        .account-price {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        
+        .account-details {
+            margin-bottom: 15px;
+        }
+        
+        .account-detail {
+            margin-bottom: 5px;
+            display: flex;
+        }
+        
+        .account-detail-label {
+            font-weight: bold;
+            min-width: 100px;
+        }
+        
+        .account-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .account-actions .btn {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+        
+        .no-accounts {
+            text-align: center;
+            padding: 30px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            color: #777;
+        }
+        
+        .data-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .alert-success {
+            background-color: #e8f5e9;
+            color: #388e3c;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .alert-danger {
+            background-color: #ffebee;
+            color: #d32f2f;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .alert-warning {
+            background-color: #fff8e1;
+            color: #f57c00;
+            border: 1px solid #ffecb3;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .footer {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+        
+        .footer p {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>لوحة إدارة متجر الجحدري</h1>
+        <p>إدارة حسابات فري فاير</p>
+    </div>
+
+    <div class="container">
+        <div id="alertContainer"></div>
+        
+        <div class="admin-panel">
+            <div class="card">
+                <div class="card-header">
+                    <h2>إضافة حساب جديد</h2>
+                </div>
+                <form id="accountForm">
+                    <input type="hidden" id="accountId">
+                    
+                    <div class="form-group">
+                        <label for="title">عنوان الحساب:</label>
+                        <input type="text" id="title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="price">السعر:</label>
+                        <input type="number" id="price" min="1" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="currency">العملة:</label>
+                        <select id="currency" required>
+                            <option value="ريال يمني">ريال يمني</option>
+                            <option value="ريال سعودي">ريال سعودي</option>
+                            <option value="دولار">دولار</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">الفئة:</label>
+                        <select id="category" required>
+                            <option value="premium">ممتاز</option>
+                            <option value="good" selected>جيد</option>
+                            <option value="economic">اقتصادي</option>
+                            <option value="special">خاص</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">وصف الحساب:</label>
+                        <textarea id="description" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>صور الحساب:</label>
+                        <div class="images-container" id="imagesContainer">
+                            <div class="add-image-btn" id="addImageBtn">+</div>
+                        </div>
+                        <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                        <small>* يمكنك إضافة صور متعددة للحساب</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="imageUrls">روابط الصور:</label>
+                        <textarea id="imageUrls" placeholder="أدخل روابط الصور مفصولة بفواصل"></textarea>
+                        <small>* أدخل روابط الصور مفصولة بفواصل</small>
+                    </div>
+                    
+                    <div id="progressContainer" class="progress-container hidden">
+                        <div id="progressBar" class="progress-bar">0%</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success btn-block" id="submitBtn">إضافة الحساب</button>
+                </form>
+            </div>
+            
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>إدارة البيانات</h2>
+                    </div>
+                    <div class="data-actions">
+                        <button id="exportBtn" class="btn">تصدير البيانات</button>
+                        <label for="importInput" class="btn">استيراد البيانات</label>
+                        <input type="file" id="importInput" accept=".json" style="display: none;">
+                    </div>
+                    <button id="clearBtn" class="btn btn-danger">حذف جميع الحسابات</button>
+                </div>
+                
+                <div class="accounts-list">
+                    <h2>الحسابات المضافة</h2>
+                    <div id="accountsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>جميع الحقوق محفوظة &copy; متجر الجحدري لحسابات فري فاير 2025</p>
+    </div>
+
+    <script>
+        // المتغيرات العامة
+        let currentImages = [];
+        let isEditing = false;
+        
+        // عناصر DOM
+        const accountForm = document.getElementById('accountForm');
+        const accountIdInput = document.getElementById('accountId');
+        const titleInput = document.getElementById('title');
+        const priceInput = document.getElementById('price');
+        const currencyInput = document.getElementById('currency');
+        const categoryInput = document.getElementById('category');
+        const descriptionInput = document.getElementById('description');
+        const imagesContainer = document.getElementById('imagesContainer');
+        const addImageBtn = document.getElementById('addImageBtn');
+        const imageInput = document.getElementById('imageInput');
+        const imageUrlsInput = document.getElementById('imageUrls');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const submitBtn = document.getElementById('submitBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const importInput = document.getElementById('importInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const accountsList = document.getElementById('accountsList');
+        const alertContainer = document.getElementById('alertContainer');
+        
+        // تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            // تحميل الحسابات
+            loadAccounts();
+            
+            // إضافة مستمعي الأحداث
+            accountForm.addEventListener('submit', handleFormSubmit);
+            addImageBtn.addEventListener('click', triggerImageInput);
+            imageInput.addEventListener('change', handleImageUpload);
+            exportBtn.addEventListener('click', handleExport);
+            importInput.addEventListener('change', handleImport);
+            clearBtn.addEventListener('click', handleClearAccounts);
+        });
+        
+        // تحميل الحسابات
+        async function loadAccounts() {
+            try {
+                const accounts = await getAllAccounts();
+                
+                if (accounts.length === 0) {
+                    accountsList.innerHTML = '<div class="no-accounts">لا توجد حسابات مضافة حالياً.</div>';
+                    return;
+                }
+                
+                // عرض الحسابات
+                accountsList.innerHTML = '';
+                accounts.forEach(account => {
+                    const accountItem = document.createElement('div');
+                    accountItem.className = `account-item ${account.category || 'good'}`;
+                    
+                    const accountNumber = account.accountNumber ? `<div class="account-number">#${account.accountNumber}</div>` : '';
+                    
+                    accountItem.innerHTML = `
+                        <div class="account-header">
+                            ${accountNumber}
+                            <div class="account-title">${account.title}</div>
+                            <div class="account-price">${account.price} ${account.currency || 'ريال'}</div>
+                        </div>
+                        <div class="account-details">
+                            <div class="account-detail">
+                                <span class="account-detail-label">الفئة:</span>
+                                <span>${getCategoryName(account.category)}</span>
+                            </div>
+                            <div class="account-detail">
+                                <span class="account-detail-label">الوصف:</span>
+                                <span>${account.description}</span>
+                            </div>
+                            <div class="account-detail">
+                                <span class="account-detail-label">عدد الصور:</span>
+                                <span>${account.images ? account.images.length : 0}</span>
+                            </div>
+                            <div class="account-detail">
+                                <span class="account-detail-label">تاريخ الإضافة:</span>
+                                <span>${formatDate(account.createdAt)}</span>
+                            </div>
+                        </div>
+                        <div class="account-actions">
+                            <button class="btn btn-warning edit-btn" data-id="${account.id}">تعديل</button>
+                            <button class="btn btn-danger delete-btn" data-id="${account.id}">حذف</button>
+                        </div>
+                    `;
+                    
+                    accountsList.appendChild(accountItem);
+                    
+                    // إضافة مستمعي الأحداث للأزرار
+                    const editBtn = accountItem.querySelector('.edit-btn');
+                    const deleteBtn = accountItem.querySelector('.delete-btn');
+                    
+                    editBtn.addEventListener('click', () => handleEdit(account.id));
+                    deleteBtn.addEventListener('click', () => handleDelete(account.id));
+                });
+            } catch (error) {
+                showAlert('حدث خطأ أثناء تحميل الحسابات', 'danger');
+                console.error(error);
+            }
+        }
+        
+        // معالجة تقديم النموذج
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            try {
+                // تغيير نص الزر وتعطيله أثناء الرفع
+                submitBtn.textContent = 'جاري الرفع... 0%';
+                submitBtn.disabled = true;
+                
+                // جمع بيانات النموذج
+                const title = titleInput.value.trim();
+                const price = parseFloat(priceInput.value);
+                const currency = currencyInput.value;
+                const category = categoryInput.value;
+                const description = descriptionInput.value.trim();
+                
+                // جمع روابط الصور من حقل النص
+                let imageUrls = [];
+                if (imageUrlsInput.value.trim()) {
+                    imageUrls = imageUrlsInput.value.trim().split(',').map(url => url.trim()).filter(url => url);
+                }
+                
+                // دمج الصور المحملة مع روابط الصور
+                const allImages = [...currentImages, ...imageUrls];
+                
+                // تحديث نص الزر بنسبة 50%
+                submitBtn.textContent = 'جاري الرفع... 50%';
+                
+                if (isEditing) {
+                    // تحديث الحساب
+                    const accountId = accountIdInput.value;
+                    const account = await getAccount(accountId);
+                    
+                    if (!account) {
+                        throw new Error('الحساب غير موجود');
+                    }
+                    
+                    const updatedAccount = {
+                        ...account,
+                        title,
+                        price,
+                        currency,
+                        category,
+                        description,
+                        images: allImages,
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    // تحديث نص الزر بنسبة 75%
+                    submitBtn.textContent = 'جاري الرفع... 75%';
+                    
+                    await updateAccount(accountId, updatedAccount);
+                    
+                    // تحديث نص الزر بنسبة 100%
+                    submitBtn.textContent = 'جاري الرفع... 100%';
+                    
+                    showAlert('تم تحديث الحساب بنجاح', 'success');
+                } else {
+                    // إضافة حساب جديد
+                    const newAccount = {
+                        title,
+                        price,
+                        currency,
+                        category,
+                        description,
+                        images: allImages,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    // تحديث نص الزر بنسبة 75%
+                    submitBtn.textContent = 'جاري الرفع... 75%';
+                    
+                    await addAccount(newAccount);
+                    
+                    // تحديث نص الزر بنسبة 100%
+                    submitBtn.textContent = 'جاري الرفع... 100%';
+                    
+                    showAlert('تمت إضافة الحساب بنجاح', 'success');
+                }
+                
+                // إعادة تعيين النموذج
+                resetForm();
+                
+                // إعادة تحميل الحسابات
+                loadAccounts();
+                
+                // إعادة تفعيل الزر وإعادة النص الأصلي
+                submitBtn.disabled = false;
+                submitBtn.textContent = isEditing ? 'تحديث الحساب' : 'إضافة الحساب';
+            } catch (error) {
+                showAlert('حدث خطأ أثناء حفظ الحساب', 'danger');
+                console.error(error);
+                
+                // إعادة تفعيل الزر وإعادة النص الأصلي في حالة الخطأ
+                submitBtn.disabled = false;
+                submitBtn.textContent = isEditing ? 'تحديث الحساب' : 'إضافة الحساب';
+            }
+        }
+        
+        // تشغيل حقل اختيار الصورة
+        function triggerImageInput() {
+            imageInput.click();
+        }
+        
+        // معالجة تحميل الصورة
+        function handleImageUpload(e) {
+            const files = e.target.files;
+            
+            if (!files.length) return;
+            
+            // إظهار شريط التقدم
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            
+            // تغيير نص الزر وتعطيله أثناء الرفع
+            submitBtn.textContent = 'جاري تحميل الصور... 0%';
+            submitBtn.disabled = true;
+            
+            let totalFiles = files.length;
+            let loadedFiles = 0;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // التحقق من نوع الملف
+                if (!file.type.startsWith('image/')) {
+                    showAlert('يرجى اختيار ملفات صور فقط', 'warning');
+                    totalFiles--;
+                    continue;
+                }
+                
+                // تقليل حجم الصورة قبل التحويل
+                resizeAndConvertToBase64(file, 800, 800, function(imageUrl) {
+                    loadedFiles++;
+                    addImagePreview(imageUrl);
+                    currentImages.push(imageUrl);
+                    
+                    // تحديث شريط التقدم
+                    const totalProgress = Math.round((loadedFiles / totalFiles) * 100);
+                    progressBar.style.width = totalProgress + '%';
+                    progressBar.textContent = totalProgress + '%';
+                    
+                    // تحديث نص الزر
+                    const buttonProgress = 50 + Math.round((loadedFiles / totalFiles) * 50);
+                    submitBtn.textContent = `جاري تحميل الصور... ${buttonProgress}%`;
+                    
+                    // إخفاء شريط التقدم وإعادة تفعيل الزر عند الانتهاء
+                    if (loadedFiles >= totalFiles) {
+                        setTimeout(() => {
+                            progressContainer.classList.add('hidden');
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = isEditing ? 'تحديث الحساب' : 'إضافة الحساب';
+                        }, 1000);
+                    }
+                });
+            }
+            
+            // إعادة تعيين حقل الإدخال
+            imageInput.value = '';
+            
+            // إذا لم تكن هناك ملفات صالحة، إعادة تفعيل الزر
+            if (totalFiles === 0) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = isEditing ? 'تحديث الحساب' : 'إضافة الحساب';
+            }
+        }
+        
+        // تقليل حجم الصورة قبل التحويل
+        function resizeAndConvertToBase64(file, maxWidth, maxHeight, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth || height > maxHeight) {
+                        const ratio = Math.min(maxWidth / width, maxHeight / height);
+                        width = Math.floor(width * ratio);
+                        height = Math.floor(height * ratio);
+                    }
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // تقليل جودة الصورة لتقليل الحجم
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    // إظهار معلومات حجم الصورة في وحدة التحكم
+                    console.log(`تم تقليل حجم الصورة: ${Math.round(dataUrl.length / 1024)} كيلوبايت`);
+                    
+                    callback(dataUrl);
+                };
+                img.onerror = function() {
+                    console.error('حدث خطأ أثناء تحميل الصورة');
+                    callback(null);
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                console.error('حدث خطأ أثناء قراءة الملف');
+                callback(null);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // تحديث إجمالي التقدم لجميع الملفات
+        function updateTotalProgress(fileIndex, totalFiles, fileProgress) {
+            // حساب متوسط التقدم لجميع الملفات
+            const weightPerFile = 1 / totalFiles;
+            const fileContribution = fileProgress * weightPerFile;
+            const currentTotalProgress = parseInt(progressBar.textContent);
+            const newTotalProgress = Math.min(
+                Math.round(currentTotalProgress + fileContribution / totalFiles),
+                99  // نحافظ على أقل من 100% حتى تكتمل جميع الملفات
+            );
+            
+            progressBar.style.width = newTotalProgress + '%';
+            progressBar.textContent = newTotalProgress + '%';
+        }
+        
+        // إضافة معاينة الصورة
+        function addImagePreview(imageUrl) {
+            const imagePreview = document.createElement('div');
+            imagePreview.className = 'image-preview';
+            imagePreview.innerHTML = `
+                <img src="${imageUrl}" alt="صورة الحساب">
+                <div class="remove-image">×</div>
+            `;
+            
+            // إضافة معاينة الصورة قبل زر الإضافة
+            imagesContainer.insertBefore(imagePreview, addImageBtn);
+            
+            // إضافة مستمع حدث لزر الحذف
+            const removeBtn = imagePreview.querySelector('.remove-image');
+            removeBtn.addEventListener('click', function() {
+                const index = Array.from(imagesContainer.children).indexOf(imagePreview);
+                if (index !== -1) {
+                    currentImages.splice(index, 1);
+                    imagePreview.remove();
+                }
+            });
+        }
+        
+        // معالجة التعديل
+        async function handleEdit(accountId) {
+            try {
+                const account = await getAccount(accountId);
+                
+                if (!account) {
+                    throw new Error('الحساب غير موجود');
+                }
+                
+                // تعيين وضع التعديل
+                isEditing = true;
+                accountIdInput.value = accountId;
+                
+                // ملء النموذج بالبيانات
+                titleInput.value = account.title || '';
+                priceInput.value = account.price || '';
+                currencyInput.value = account.currency || 'ريال يمني';
+                categoryInput.value = account.category || 'good';
+                descriptionInput.value = account.description || '';
+                
+                // إعادة تعيين الصور
+                currentImages = [];
+                
+                // إزالة جميع معاينات الصور
+                const previews = imagesContainer.querySelectorAll('.image-preview');
+                previews.forEach(preview => preview.remove());
+                
+                // إضافة الصور الحالية
+                if (account.images && account.images.length) {
+                    // فصل الصور إلى صور محملة وروابط URL
+                    const dataUrls = account.images.filter(url => url.startsWith('data:'));
+                    const externalUrls = account.images.filter(url => !url.startsWith('data:'));
+                    
+                    // إضافة الصور المحملة
+                    dataUrls.forEach(url => {
+                        addImagePreview(url);
+                        currentImages.push(url);
+                    });
+                    
+                    // إضافة روابط الصور
+                    imageUrlsInput.value = externalUrls.join(', ');
+                }
+                
+                // تغيير نص الزر
+                submitBtn.textContent = 'تحديث الحساب';
+                
+                // التمرير إلى النموذج
+                accountForm.scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                showAlert('حدث خطأ أثناء تحميل بيانات الحساب', 'danger');
+                console.error(error);
+            }
+        }
+        
+        // معالجة الحذف
+        async function handleDelete(accountId) {
+            if (confirm('هل أنت متأكد من حذف هذا الحساب؟')) {
+                try {
+                    await deleteAccount(accountId);
+                    showAlert('تم حذف الحساب بنجاح', 'success');
+                    loadAccounts();
+                } catch (error) {
+                    showAlert('حدث خطأ أثناء حذف الحساب', 'danger');
+                    console.error(error);
+                }
+            }
+        }
+        
+        // معالجة التصدير
+        async function handleExport() {
+            try {
+                const accounts = await getAllAccounts();
+                
+                if (accounts.length === 0) {
+                    showAlert('لا توجد حسابات للتصدير', 'warning');
+                    return;
+                }
+                
+                // إنشاء ملف JSON
+                const dataStr = JSON.stringify(accounts, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const dataUrl = URL.createObjectURL(dataBlob);
+                
+                // إنشاء رابط تنزيل
+                const downloadLink = document.createElement('a');
+                downloadLink.href = dataUrl;
+                downloadLink.download = `aljahdari_accounts_${formatDateForFile(new Date())}.json`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                showAlert('تم تصدير البيانات بنجاح', 'success');
+            } catch (error) {
+                showAlert('حدث خطأ أثناء تصدير البيانات', 'danger');
+                console.error(error);
+            }
+        }
+        
+        // معالجة الاستيراد
+        async function handleImport(e) {
+            const file = e.target.files[0];
+            
+            if (!file) return;
+            
+            try {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        if (!Array.isArray(data)) {
+                            throw new Error('تنسيق البيانات غير صحيح');
+                        }
+                        
+                        if (confirm(`سيتم استيراد ${data.length} حساب. هل أنت متأكد؟`)) {
+                            await importAccounts(data);
+                            showAlert('تم استيراد البيانات بنجاح', 'success');
+                            loadAccounts();
+                        }
+                    } catch (error) {
+                        showAlert('حدث خطأ أثناء قراءة ملف البيانات', 'danger');
+                        console.error(error);
+                    }
+                };
+                reader.readAsText(file);
+            } catch (error) {
+                showAlert('حدث خطأ أثناء استيراد البيانات', 'danger');
+                console.error(error);
+            }
+            
+            // إعادة تعيين حقل الإدخال
+            importInput.value = '';
+        }
+        
+        // معالجة حذف جميع الحسابات
+        async function handleClearAccounts() {
+            if (confirm('هل أنت متأكد من حذف جميع الحسابات؟ لا يمكن التراجع عن هذا الإجراء!')) {
+                try {
+                    await deleteAllAccounts();
+                    showAlert('تم حذف جميع الحسابات بنجاح', 'success');
+                    loadAccounts();
+                } catch (error) {
+                    showAlert('حدث خطأ أثناء حذف الحسابات', 'danger');
+                    console.error(error);
+                }
+            }
+        }
+        
+        // إعادة تعيين النموذج
+        function resetForm() {
+            isEditing = false;
+            accountIdInput.value = '';
+            accountForm.reset();
+            
+            // إزالة جميع معاينات الصور
+            const previews = imagesContainer.querySelectorAll('.image-preview');
+            previews.forEach(preview => preview.remove());
+            
+            // إعادة تعيين الصور
+            currentImages = [];
+            
+            // إعادة تعيين نص الزر
+            submitBtn.textContent = 'إضافة الحساب';
+        }
+        
+        // عرض تنبيه
+        function showAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alert);
+            
+            // إخفاء التنبيه بعد 3 ثوانٍ
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        }
+        
+        // الحصول على اسم الفئة بالعربية
+        function getCategoryName(category) {
+            const categories = {
+                'premium': 'ممتاز',
+                'good': 'جيد',
+                'economic': 'اقتصادي',
+                'special': 'خاص'
+            };
+            
+            return categories[category] || 'جيد';
+        }
+        
+        // تنسيق التاريخ
+        function formatDate(dateString) {
+            if (!dateString) return 'غير محدد';
+            
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ar-SA', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // تنسيق التاريخ للملفات
+        function formatDateForFile(date) {
+            return date.toISOString().split('T')[0];
+        }
+        
+        // استيراد الحسابات
+        async function importAccounts(accounts) {
+            for (const account of accounts) {
+                await addAccount(account);
+            }
+        }
+    </script>
+</body>
+</html>
